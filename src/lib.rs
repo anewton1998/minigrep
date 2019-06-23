@@ -26,12 +26,19 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
-        if args.len() < 3 {
-            return Err("not enough arguments");
-        }
-        let query = args[1].clone();
-        let filename = args[2].clone();
+    pub fn new(args: std::vec::Vec<String>) -> Result<Config, &'static str> {
+        let mut i = args.iter();
+        i.next();
+
+        let query = match i.next() {
+            Some(arg) => arg,
+            None => return Err("Ddidn't get a query string"),
+        }.to_string();
+
+        let filename = match i.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a file name"),
+        }.to_string();
 
         let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
 
@@ -40,15 +47,9 @@ impl Config {
 }
 
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut results = Vec::new();
-
-    for line in contents.lines() {
-        if line.contains(query) {
-            results.push(line)
-        }
-    }
-
-    results
+    contents.lines()
+        .filter( |line| line.contains(query))
+        .collect()
 }
 
 pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
@@ -70,7 +71,8 @@ mod tests {
 
     #[test]
     fn create_config() {
-        let config = Config::new( &[ String::from("programname"), String::from("the"), String::from("poem") ] )
+        let args  = vec![ String::from("programmer"), String::from("the"), String::from("poem") ];
+        let config = Config::new( args )
             .expect( "error creating config" );
 
         assert_eq!( config.query, "the" );
